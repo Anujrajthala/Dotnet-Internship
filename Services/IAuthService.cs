@@ -9,4 +9,5 @@ public interface IAuthService{
     public Task<bool> VerifyEmail(string token);
     public string GenerateAccessToken(User user);
      public RefreshToken GenerateRefreshToken();
+    public Task<ResponseDTO<LoginResponseDTO>> RefreshSession(string refreshToken);
 }

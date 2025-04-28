@@ -5,7 +5,7 @@ using  MongoDB.Bson.Serialization.Attributes;
     public class TodoItem{
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        public int Id{set; get;}
+        public string Id{set; get;} = null!;
 
         [BsonElement("title")]
         public string Title{get; set;} = string.Empty;
@@ -13,6 +13,12 @@ using  MongoDB.Bson.Serialization.Attributes;
         [BsonElement("description")]
         public string Description{get; set;} = string.Empty;
 
+        [BsonElement("addedat")]
+        public DateTime AddedAt{get; set;}
+        public DateTime ExpiryDate{get; set;}
+
         [BsonElement("iscompleted")]
-        public string IsCompleted{get; set;} = string.Empty;
+        public bool IsCompleted{get; set;} = false;
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string UserId{get; set;}= string.Empty;
     }

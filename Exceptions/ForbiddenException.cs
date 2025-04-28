@@ -1,4 +1,4 @@
 namespace TodoApi.Exceptions;
-public class ForbiddenException(string traceId, string message) : ServiceException(statusCode,traceId,message){
+public class ForbiddenException(string message) : ServiceException(statusCode,message){
     private const int statusCode = 403;
 }

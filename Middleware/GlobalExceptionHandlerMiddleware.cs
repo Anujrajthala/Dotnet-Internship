@@ -4,7 +4,8 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver.Core.Events;
 using TodoApi.Exceptions;
-public class GlobalExceptionHandlerMiddleware{
+public class GlobalExceptionHandlerMiddleware
+{
     private readonly RequestDelegate _next;
     private readonly ILogger<GlobalExceptionHandlerMiddleware> _logger;
     private readonly Dictionary<Type, Func<Exception,HttpContext,Task>> _exceptionHandlers;
@@ -14,18 +15,18 @@ public class GlobalExceptionHandlerMiddleware{
         _logger = logger;
         _exceptionHandlers = new Dictionary<Type,Func<Exception,HttpContext,Task>>(){
             {typeof(BadRequestException),(ex,context)=> HandleBadRequestException((BadRequestException)ex,context)},
-            // {typeof(ForbiddenException),(ex,context)=> HandleForbiddenException((ForbiddenException) ex,context)},
-            // {typeof(UnAuthorizedException),(ex,context)=> HandleUnAuthorizedException((UnAuthorizedException)ex,context)},
+            {typeof(ForbiddenException),(ex,context)=> HandleForbiddenException((ForbiddenException) ex,context)},
+            {typeof(UnAuthorizedException),(ex,context)=> HandleUnAuthorizedException((UnAuthorizedException)ex,context)},
             {typeof(NotFoundException), (ex,context)=> HandleNotFoundException((NotFoundException)ex,context)},
             
         };
     }
-    public async Task Invoke(HttpContext context){
+    public async Task InvokeAsync(HttpContext context){
         try{
             await _next(context);
         }
         catch(Exception ex){
-            
+
             await HandleExceptionAsync(context,ex);
             return;
         }
@@ -45,19 +46,40 @@ public class GlobalExceptionHandlerMiddleware{
         context.Response.StatusCode = StatusCodes.Status400BadRequest;
         var errorResponse = new{
             success = false,
-            statusCode = 400,
+            statusCode = ex.StatusCode,
             message = ex.Message,
-            Error = ex.Errors
+            traceId = context.TraceIdentifier,
         };
 
+        return context.Response.WriteAsJsonAsync(errorResponse);
+    }
+    public Task HandleForbiddenException(ForbiddenException ex, HttpContext context){
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        var errorResponse = new{
+            success = false,
+            statusCode = ex.StatusCode,
+            message = ex.Message,
+            traceId = context.TraceIdentifier,
+        };
+        return context.Response.WriteAsJsonAsync(errorResponse);
+    }
+    public Task HandleUnAuthorizedException(UnAuthorizedException ex, HttpContext context){
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        var errorResponse = new{
+            success = false,
+            statusCode = ex.StatusCode,
+            message = ex.Message,
+            traceId = context.TraceIdentifier,
+        };
         return context.Response.WriteAsJsonAsync(errorResponse);
     }
     public Task HandleNotFoundException(NotFoundException ex, HttpContext context){
         context.Response.StatusCode = StatusCodes.Status404NotFound;
         var errorResponse = new{
             success = false,
-            statusCode= 404,
-            message = ex.Message
+            statusCode= ex.StatusCode,
+            message = ex.Message,
+            traceId = context.TraceIdentifier,
         };
         return context.Response.WriteAsJsonAsync(errorResponse);
     }
@@ -66,7 +88,8 @@ public class GlobalExceptionHandlerMiddleware{
         var errorResponse = new{
             success = false,
             statusCode = 500,
-            message = "An unexpected error occurred."
+            message = "An unexpected error occurred.",
+            traceId = context.TraceIdentifier,
         };
         return context.Response.WriteAsJsonAsync(errorResponse);
     }

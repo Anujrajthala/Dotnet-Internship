@@ -57,6 +57,10 @@
               "target": "Package",
               "version": "[3.3.0, )"
             },
+            "Riok.Mapperly": {
+              "target": "Package",
+              "version": "[4.2.0, )"
+            },
             "Swashbuckle.AspNetCore": {
               "target": "Package",
               "version": "[6.6.2, )"

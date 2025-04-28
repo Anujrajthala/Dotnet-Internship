@@ -4,8 +4,5 @@ public class RefreshToken{
     public DateTime Expires{get; set;}
     public bool IsExpired => DateTime.UtcNow >= Expires;
     public DateTime CreatedAt{get; set;}
-    public DateTime? Revoked{get; set;}
-    public string? ReplacedByToken{get; set;}
-    public bool IsRevoked => Revoked!=null;
-    public bool IsActive => !IsRevoked && !IsExpired;
+    public bool IsActive => !IsExpired;
 }

@@ -13,6 +13,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authentication.BearerToken;
 using TodoApi.Exceptions;
+using Microsoft.VisualBasic;
 
 namespace TodoApi.Services.ServiceImpl;
 public class AuthService : IAuthService
@@ -32,7 +33,7 @@ public class AuthService : IAuthService
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.UTF8.GetBytes(_jwtMonitor.CurrentValue.Secret);
         var claims = new List<Claim>{
-            new (JwtRegisteredClaimNames.Sub, user.Id),
+            new (ClaimTypes.NameIdentifier, user.Id),
             new (JwtRegisteredClaimNames.Email, user.Email)
         };
         foreach(var role in user.Roles){
@@ -40,7 +41,7 @@ public class AuthService : IAuthService
         }
         var token = new JwtSecurityToken(
             claims : claims,
-            expires: DateTime.UtcNow.AddMinutes(30),
+            expires: DateTime.UtcNow.AddHours(3),
             signingCredentials: new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256)
 
         );
@@ -60,26 +61,28 @@ public class AuthService : IAuthService
         var traceId = _accessor.HttpContext?.TraceIdentifier??"unknown";
         User user = await _user.Find(u=>u.UserName==request.UserName).FirstOrDefaultAsync();
         if(user==null){
-             throw new NotFoundException(traceId,$"User with UserName '{request.UserName} not found'");}
-        else{
-            if(!user.EmailVerified) {
-                // throw new BadRequestExceptionII("Something went wrong");
-                throw new ForbiddenException(traceId,"Please verify your email first");
-                }
-            else{
-            if(!user.VerifyPassword(user,request.Password)){
-                Errors.Add("Password does not match");
+             throw new NotFoundException($"User with UserName '{request.UserName} not found'");}
+        
+        if(!user.EmailVerified) {
+            throw new ForbiddenException("Please verify your email first");
             }
-           
+        else{
+            if(!user.VerifyPassword(user,request.Password)){
+                throw new BadRequestException("Password does not match");
+            }
             var accessToken = GenerateAccessToken(user);
             var refreshToken = GenerateRefreshToken();
-
+            user.RefreshToken= refreshToken;
+            var updateResult = await _user.ReplaceOneAsync(
+                u => u.Id == user.Id, 
+                user, 
+                new ReplaceOptions { IsUpsert = false }
+            );
             // return $"accessToken: {accessToken}, refreshToken: {refreshToken}";
-            return new ResponseDTO<LoginResponseDTO>( true,"User Logged In Successfully",new LoginResponseDTO(accessToken,refreshToken.Token));
+            return new ResponseDTO<LoginResponseDTO>( true,"User Logged In Successfully",new LoginResponseDTO(accessToken,user.RefreshToken.Token));
        
-        }}
+        }
 
-        throw new BadRequestException(traceId,"Errors:",Errors);
         }
     
     public async Task<ResponseDTO<RegisterResponseDTO>> RegisterUserAsync(RegisterRequestDTO registerDTO)
@@ -87,7 +90,7 @@ public class AuthService : IAuthService
         var token = Guid.NewGuid().ToString();
         var traceId = _accessor.HttpContext?.TraceIdentifier??"unknown";
         var user = await _user.Find(u=> u.UserName==registerDTO.UserName).FirstOrDefaultAsync();
-        if(user!=null) throw new BadRequestException(traceId,"Errors: ",[$"User with UserName '{registerDTO.UserName}' already exists. Please try again with another username"]);
+        if(user!=null) throw new BadRequestException($"User with UserName '{registerDTO.UserName}' already exists. Please try again with another username");
         var newUser = new User{
             FirstName = registerDTO.FirstName,
             LastName = registerDTO.LastName,
@@ -123,7 +126,6 @@ public class AuthService : IAuthService
        if(user==null||user.EmailTokenExpiryTime < DateTime.UtcNow){
             return false;
        }
-       
        var update = Builders<User>.Update
         .Set(u=>u.EmailVerificationToken,null)
         .Set(u=>u.EmailVerified,true)
@@ -141,20 +143,13 @@ public class AuthService : IAuthService
        
     // }
     public async Task<ResponseDTO<LoginResponseDTO>> RefreshSession(string refreshToken){
-        List<string> Errors = new List<string>();
-        var traceId = _accessor.HttpContext?.TraceIdentifier??"unknown";
-        var user = _user.Find(u=> u.RefreshTokens.Any(rt=>rt.Token==refreshToken)).FirstOrDefault();
-        if(user==null){
-            throw new UnAuthorizedException(traceId,"Given Refresh Token does not exist");
-        }
-        var existingRefreshToken = user.RefreshTokens.FirstOrDefault(rt=> rt.Token==refreshToken);
-        if(existingRefreshToken==null ||!existingRefreshToken.IsActive){
-            throw new UnAuthorizedException(traceId,"Given Refresh Token not valid");
-        }
-        existingRefreshToken.Revoked = DateTime.UtcNow;
-        user.RefreshTokens = [.. user.RefreshTokens.Where(rt=> rt.IsActive)];
-        var newRefreshToken = GenerateRefreshToken();
-        user.RefreshTokens.Add(newRefreshToken);
+        var user = _user.Find(u=> u.RefreshToken.Token==refreshToken).FirstOrDefault();
+        if(user==null)throw new NotFoundException("Given Refresh Token does not exist");
+        
+        var existingRefreshToken = user.RefreshToken;
+        if(existingRefreshToken==null ||!existingRefreshToken.IsActive) throw new BadRequestException("Given Refresh Token not valid");
+        RefreshToken newRefreshToken = GenerateRefreshToken();
+        user.RefreshToken =  newRefreshToken ;
         var newAccessToken = GenerateAccessToken(user);
         await _user.ReplaceOneAsync(u=>u.Id==user.Id,user);
         return new ResponseDTO<LoginResponseDTO>(true,"Refresh session successfull!! User logged in successfully",new LoginResponseDTO(newAccessToken,newRefreshToken.Token));

@@ -37,15 +37,14 @@ public class User{
     public DateTime? EmailTokenExpiryTime{get; set;}
 
     [BsonElement("roles")]
-    public List<string> Roles = [];
+    public List<string> Roles{get; set;}= ["User"];
 
-    [BsonElement("refreshtokens")]
-    public List<RefreshToken> RefreshTokens = [];
+    [BsonElement("refreshtoken")]
+    public RefreshToken? RefreshToken{get; set;}
 
     public void CreatePasswordHash(string password){
         byte[] salt = new byte[64];
         RandomNumberGenerator.Fill(salt);
-
         using var hmac = new System.Security.Cryptography.HMACSHA512(salt);
         PasswordHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
         PasswordSalt = salt;

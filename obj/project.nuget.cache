@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "AjY8zUrKfDc=",
+  "dgSpecHash": "gk5wa3Yo1bM=",
   "success": true,
   "projectFilePath": "D:\\React+ASP_DOTNET_CORE\\TodoApi\\TodoApi.csproj",
   "expectedPackageFiles": [
@@ -22,6 +22,7 @@
     "C:\\Users\\Anuj\\.nuget\\packages\\microsoft.win32.registry\\5.0.0\\microsoft.win32.registry.5.0.0.nupkg.sha512",
     "C:\\Users\\Anuj\\.nuget\\packages\\mongodb.bson\\3.3.0\\mongodb.bson.3.3.0.nupkg.sha512",
     "C:\\Users\\Anuj\\.nuget\\packages\\mongodb.driver\\3.3.0\\mongodb.driver.3.3.0.nupkg.sha512",
+    "C:\\Users\\Anuj\\.nuget\\packages\\riok.mapperly\\4.2.0\\riok.mapperly.4.2.0.nupkg.sha512",
     "C:\\Users\\Anuj\\.nuget\\packages\\sharpcompress\\0.30.1\\sharpcompress.0.30.1.nupkg.sha512",
     "C:\\Users\\Anuj\\.nuget\\packages\\snappier\\1.0.0\\snappier.1.0.0.nupkg.sha512",
     "C:\\Users\\Anuj\\.nuget\\packages\\swashbuckle.aspnetcore\\6.6.2\\swashbuckle.aspnetcore.6.6.2.nupkg.sha512",

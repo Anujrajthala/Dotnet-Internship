@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TodoApi.DTOs;
 using TodoApi.Services;
@@ -26,5 +27,11 @@ public class AuthController:ControllerBase{
     public async Task<IActionResult> VerifyUserEmail([FromQuery] string token){
         var result =await _authService.VerifyEmail(token);
         return result?Ok("Email verified successfully"):BadRequest("Token invalid");
+    }
+    [Authorize]
+    [HttpPost("refreshsession")]
+    public async Task<IActionResult> RefreshSession([FromBody] string refreshToken){
+        var result = await _authService.RefreshSession( refreshToken);
+        return Ok(result);
     }
 }
